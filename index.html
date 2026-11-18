@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocaMaster AI - AI自動生成＆カスタム単語帳</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-100 min-h-screen text-slate-800 flex flex-col">
+
+    <!-- トースト通知コンテナ -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ヘッダー -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+            <!-- ロゴ -->
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-gradient-to-tr from-indigo-600 to-blue-500 text-white p-2 rounded-xl shadow-md">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">VocaMaster</h1>
+                        <span class="px-1.5 py-0.5 text-[10px] font-extrabold bg-indigo-100 text-indigo-700 rounded-md">AI</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500">AI自動生成＆カスタム単語帳</p>
+                </div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="openAddModal('ai')" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-indigo-200 transition-all flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>写真から抽出</span>
+                </button>
+                <button onclick="openAddModal('manual')" class="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>単語入力・AI生成</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 単語帳セレクター＆モードタブバー -->
+        <div class="bg-slate-50/90 border-t border-slate-200/80">
+            <div class="max-w-5xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2.5">
+                <!-- 単語帳選択エリア -->
+                <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                    <div class="flex items-center gap-1 text-xs font-bold text-slate-500 shrink-0">
+                        <i class="fa-solid fa-folder-open text-indigo-500"></i>
+                        <span class="hidden sm:inline">単語帳:</span>
+                    </div>
+                    <select id="deck-selector" onchange="selectDeck(this.value)" class="flex-1 min-w-0 bg-white border border-slate-300 text-slate-800 text-xs sm:text-sm font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm truncate">
+                        <!-- JSで動的生成 -->
+                    </select>
+                    <button onclick="openCreateDeckModal()" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-sm" title="新しい単語帳を作成">
+                        <i class="fa-solid fa-folder-plus"></i>
+                        <span>新規</span>
+                    </button>
+                    <button onclick="openDeckManagerModal()" class="shrink-0 bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1 shadow-sm" title="単語帳の整理・名前変更・削除">
+                        <i class="fa-solid fa-gear text-slate-500"></i>
+                        <span class="hidden md:inline">管理</span>
+                    </button>
+                </div>
+
+                <!-- 学習モードタブ -->
+                <nav class="flex bg-slate-200/70 p-1 rounded-xl shrink-0 justify-center">
+                    <button onclick="switchTab('cards')" id="tab-cards" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                        <i class="fa-solid fa-clone mr-1"></i>カード
+                    </button>
+                    <button onclick="switchTab('list')" id="tab-list" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-list mr-1"></i>一覧
+                    </button>
+                    <button onclick="switchTab('quiz')" id="tab-quiz" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-brain mr-1"></i>4択クイズ
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6">
+        
+        <!-- 現在の単語帳の進捗バー -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 mb-6 flex items-center justify-between gap-4">
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-center mb-1.5 gap-2">
+                    <span id="progress-deck-label" class="text-xs font-bold text-slate-600 tracking-wider truncate">習得進捗</span>
+                    <span id="progress-text" class="text-xs font-bold text-indigo-600 shrink-0">0 / 0 (0%)</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-blue-600 h-2.5 rounded-full transition-all duration-500 w-0"></div>
+                </div>
+            </div>
+            <button onclick="confirmResetDeckProgress()" class="shrink-0 text-xs text-slate-500 hover:text-rose-600 transition-colors px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-rose-200 bg-slate-50 hover:bg-rose-50" title="現在の単語帳の習得状況をリセット">
+                <i class="fa-solid fa-rotate-right mr-1"></i>進捗リセット
+            </button>
+        </div>
+
+        <!-- 単語が0件のときのウェルカム/エンプティ状態ビュー -->
+        <div id="empty-deck-banner" class="hidden bg-white rounded-3xl p-8 sm:p-10 text-center border border-slate-200 shadow-sm space-y-5 my-4">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-inner">
+                <i class="fa-solid fa-sparkles"></i>
+            </div>
+            <div class="space-y-2 max-w-md mx-auto">
+                <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">単語帳はまだ空です</h2>
+                <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                    ノートや参考書の写真を撮って一括登録するか、英単語を入力するだけでAIが発音記号・日本語訳・例文を自動生成します！
+                </p>
+            </div>
+            <div class="flex flex-col sm:flex-row justify-center gap-3 pt-2 max-w-md mx-auto">
+                <button onclick="openAddModal('ai')" class="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3.5 px-5 rounded-2xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 active:scale-95 text-sm">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>写真からAI抽出</span>
+                </button>
+                <button onclick="openAddModal('manual')" class="flex-1 bg-white hover:bg-indigo-50 text-indigo-700 border-2 border-indigo-200 font-bold py-3.5 px-5 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 text-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>単語入力＆AI自動生成</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= 1. カードモード ================= -->
+        <section id="view-cards" class="space-y-6">
+            <!-- フィルターコントロール -->
+            <div class="flex flex-wrap justify-between items-center gap-3 bg-white/80 p-3 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold text-slate-500">絞り込み:</span>
+                    <select id="card-filter" onchange="filterCards()" class="bg-white border border-slate-300 text-slate-700 text-xs rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-semibold">
+                        <option value="all">すべて表示</option>
+                        <option value="unlearned">未習得のみ</option>
+                        <option value="learned">習得済みのみ</option>
+                        <option value="word">単語のみ</option>
+                        <option value="idiom">熟語のみ</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="hidden md:inline text-[11px] text-slate-400">Space: 裏返す / ←→: 移動</span>
+                    <button onclick="shuffleCards()" class="bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-bold px-3.5 py-1.5 rounded-xl transition-colors flex items-center border border-slate-200/60">
+                        <i class="fa-solid fa-shuffle mr-1.5 text-indigo-500"></i>シャッフル
+                    </button>
+                </div>
+            </div>
+
+            <!-- フリップカード本体 -->
+            <div class="relative w-full max-w-xl mx-auto h-80 sm:h-88 perspective-1000 cursor-pointer select-none" onclick="flipCard()">
+                <div id="flashcard" class="relative w-full h-full duration-500 transform-style-3d shadow-xl rounded-3xl bg-white border border-slate-200">
+                    
+                    <!-- 表面 (英単語/熟語) -->
+                    <div class="absolute inset-0 w-full h-full backface-hidden flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-white via-white to-slate-50">
+                        <div class="flex justify-between items-center gap-2">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span id="card-type-badge" class="shrink-0 px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full tracking-wider">単語</span>
+                                <span id="card-deck-badge" class="truncate px-2.5 py-1 bg-slate-100 text-slate-500 text-[11px] font-medium rounded-full">マイ単語帳</span>
+                            </div>
+                            <div class="flex items-center space-x-2 shrink-0">
+                                <span id="card-counter" class="text-xs font-bold text-slate-400">0 / 0</span>
+                                <button onclick="event.stopPropagation(); speakWord();" class="w-9 h-9 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-colors shadow-sm" title="発音を聞く">
+                                    <i class="fa-solid fa-volume-high text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-center my-auto px-2">
+                            <h2 id="card-word" class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2 break-words">-</h2>
+                            <p id="card-phonetic" class="text-sm font-medium text-slate-400 font-mono"></p>
+                        </div>
+                        <div class="text-center">
+                            <span class="inline-flex items-center text-xs text-slate-400 bg-slate-100 px-3.5 py-1.5 rounded-full">
+                                <i class="fa-solid fa-hand-pointer mr-1.5 animate-pulse text-indigo-500"></i>タップして意味を見る
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 裏面 (意味・品詞・補足) -->
+                    <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white">
+                        <div class="flex justify-between items-center">
+                            <span class="px-3 py-1 bg-white/10 text-indigo-200 text-xs font-bold rounded-full tracking-wider">意味・解説</span>
+                            <div class="flex items-center gap-2">
+                                <span id="card-counter-back" class="text-xs font-semibold text-slate-400">0 / 0</span>
+                                <button onclick="event.stopPropagation(); speakWord();" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-indigo-200 flex items-center justify-center transition-colors" title="発音を聞く">
+                                    <i class="fa-solid fa-volume-high text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-center my-auto space-y-3 overflow-y-auto max-h-48 px-2">
+                            <div class="flex items-center justify-center space-x-2">
+                                <span id="card-pos" class="px-2.5 py-0.5 bg-indigo-500/40 text-indigo-200 text-xs font-bold rounded">-</span>
+                                <span id="card-word-back" class="text-lg sm:text-xl font-bold text-slate-200">-</span>
+                            </div>
+                            <p id="card-meaning" class="text-lg sm:text-xl font-bold text-white leading-relaxed">-</p>
+                            <p id="card-note" class="text-xs text-indigo-200/80 bg-white/5 rounded-xl p-2.5 hidden"></p>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-xs text-slate-400">タップで表に戻る</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- カード操作ボタン -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-xl mx-auto">
+                <button onclick="prevCard()" class="w-full sm:w-auto flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-5 rounded-2xl border border-slate-200 shadow-sm transition-all flex items-center justify-center active:scale-95">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>前へ
+                </button>
+                <button onclick="toggleLearnedStatus()" id="learned-btn" class="w-full sm:w-auto flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold py-3.5 px-5 rounded-2xl shadow-sm transition-all flex items-center justify-center active:scale-95">
+                    <i class="fa-solid fa-check mr-2"></i>覚えたにする
+                </button>
+                <button onclick="nextCard()" class="w-full sm:w-auto flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-5 rounded-2xl shadow-md transition-all flex items-center justify-center active:scale-95">
+                    次へ<i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 2. 一覧リストモード ================= -->
+        <section id="view-list" class="hidden space-y-4">
+            <!-- 検索 & フィルターバー -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="search-input" oninput="renderList()" placeholder="英単語・熟語や日本語の意味で検索..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="setListFilter('type', 'all')" id="filter-type-all" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white transition-colors">すべて</button>
+                        <button onclick="setListFilter('type', 'word')" id="filter-type-word" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">単語のみ</button>
+                        <button onclick="setListFilter('type', 'idiom')" id="filter-type-idiom" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">熟語のみ</button>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button onclick="setListFilter('status', 'all')" id="filter-status-all" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 text-white transition-colors">全ステータス</button>
+                        <button onclick="setListFilter('status', 'unlearned')" id="filter-status-unlearned" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">未習得</button>
+                        <button onclick="setListFilter('status', 'learned')" id="filter-status-learned" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">習得済</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 単語リスト件数表示 -->
+            <div class="flex justify-between items-center px-1 text-xs font-semibold text-slate-500">
+                <span id="list-count-label">表示中: 0件</span>
+            </div>
+
+            <!-- 単語リストコンテナ -->
+            <div id="vocab-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- JavaScriptで動的生成 -->
+            </div>
+        </section>
+
+        <!-- ================= 3. 4択クイズモード ================= -->
+        <section id="view-quiz" class="hidden space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 max-w-xl mx-auto">
+                <!-- クイズ開始前画面 -->
+                <div id="quiz-start-screen" class="text-center py-6 space-y-4">
+                    <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner">
+                        <i class="fa-solid fa-gamepad"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-slate-900">4択実力テスト</h2>
+                    <p id="quiz-deck-info" class="text-sm text-slate-500 max-w-sm mx-auto">選択中の単語帳からランダムに出題されます。理解度をチェックしましょう！</p>
+                    <div class="pt-2">
+                        <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95">
+                            テストを開始する <i class="fa-solid fa-play ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- クイズ進行中画面 -->
+                <div id="quiz-game-screen" class="hidden space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <span id="quiz-progress-count" class="text-xs font-bold text-indigo-600 uppercase tracking-wider">問題 1 / 10</span>
+                        <span class="text-xs font-bold text-slate-400">スコア: <span id="quiz-score" class="text-indigo-600">0</span></span>
+                    </div>
+                    
+                    <div class="text-center py-4">
+                        <span id="quiz-type-badge" class="px-2.5 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full">単語</span>
+                        <div class="flex items-center justify-center gap-2 mt-3 mb-1">
+                            <h3 id="quiz-question-word" class="text-2xl sm:text-3xl font-extrabold text-slate-900">word</h3>
+                            <button onclick="speakQuizWord()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-colors">
+                                <i class="fa-solid fa-volume-high text-xs"></i>
+                            </button>
+                        </div>
+                        <p id="quiz-question-phonetic" class="text-xs font-mono text-slate-400"></p>
+                    </div>
+
+                    <div id="quiz-options" class="space-y-3">
+                        <!-- 選択肢ボタンが動的に入る -->
+                    </div>
+
+                    <div id="quiz-next-container" class="hidden pt-2 text-right">
+                        <button onclick="nextQuizQuestion()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition-all text-sm">
+                            次の問題へ <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- クイズ結果画面 -->
+                <div id="quiz-result-screen" class="hidden text-center py-6 space-y-4">
+                    <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-slate-900">テスト終了！</h2>
+                    <p class="text-slate-600 text-sm">お疲れ様でした！あなたの正解数は...</p>
+                    <div class="text-4xl font-extrabold text-indigo-600 my-2">
+                        <span id="final-score">0</span> / <span id="final-total">0</span>
+                    </div>
+                    <p id="quiz-comment" class="text-sm font-medium text-slate-500">素晴らしい成績です！</p>
+                    <div class="pt-4 flex justify-center gap-3">
+                        <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-md transition-all text-sm">
+                            もう一度挑戦する
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= モーダル 1: 写真AIスキャン＆AI自動生成単語追加モーダル ================= -->
+    <div id="add-word-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+            <!-- モーダルヘッダー -->
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h3 class="font-extrabold text-slate-900 text-base sm:text-lg">単語・熟語を追加</h3>
+                </div>
+                <button onclick="closeAddModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- モーダルモード切替タブ -->
+            <div class="px-6 pt-3 bg-slate-50 border-b border-slate-200 flex gap-2 shrink-0">
+                <button onclick="switchAddMode('ai')" id="add-tab-ai" class="px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-camera mr-1.5"></i>写真からAI自動抽出
+                </button>
+                <button onclick="switchAddMode('manual')" id="add-tab-manual" class="px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>単語入力＆AI自動生成
+                </button>
+            </div>
+
+            <!-- モーダルボディ (スクロール可能) -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-5">
+                
+                <!-- 追加先の単語帳選択 (共通) -->
+                <div class="bg-indigo-50/70 p-3.5 rounded-2xl border border-indigo-100 space-y-2.5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <label class="text-xs font-bold text-indigo-900 flex items-center gap-1.5 shrink-0">
+                            <i class="fa-solid fa-folder-plus text-indigo-600"></i>
+                            <span>追加先の単語帳:</span>
+                        </label>
+                        <div class="flex items-center gap-2 flex-1 sm:max-w-xs">
+                            <select id="modal-target-deck" class="w-full bg-white border border-indigo-200 text-slate-800 text-xs sm:text-sm font-bold rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <!-- JSで動的生成 -->
+                            </select>
+                            <button type="button" onclick="toggleInlineDeckCreate()" class="shrink-0 bg-white hover:bg-indigo-100 text-indigo-600 border border-indigo-200 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors">
+                                + 新規
+                            </button>
+                        </div>
+                    </div>
+                    <!-- モーダル内インライン新規単語帳作成フォーム -->
+                    <div id="inline-deck-create-box" class="hidden pt-2 border-t border-indigo-200/60 flex gap-2">
+                        <input type="text" id="inline-new-deck-name" placeholder="新しい単語帳名を入力..." class="flex-1 px-3 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none" onkeypress="if(event.key==='Enter'){ event.preventDefault(); createInlineDeck(); }">
+                        <button type="button" onclick="createInlineDeck()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shrink-0">
+                            作成して選択
+                        </button>
+                    </div>
+                </div>
+
+                <!-- [A] 写真からAI自動抽出パネル -->
+                <div id="panel-add-ai" class="space-y-4">
+                    <!-- 写真選択エリア -->
+                    <div id="ai-upload-area" class="border-2 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50/30 rounded-2xl p-6 text-center transition-all cursor-pointer" onclick="document.getElementById('photo-input').click()">
+                        <input type="file" id="photo-input" accept="image/*" multiple class="hidden" onchange="handlePhotoUpload(event)">
+                        <div class="w-14 h-14 bg-white text-indigo-600 rounded-2xl shadow-sm flex items-center justify-center mx-auto text-2xl mb-3">
+                            <i class="fa-solid fa-camera-retro"></i>
+                        </div>
+                        <p class="font-bold text-slate-800 text-sm sm:text-base mb-1">単語帳やノートの写真を撮影・選択</p>
+                        <p class="text-xs text-slate-500">英語だけのプリントでもOK！AIが単語・発音記号・日本語訳・例文をすべて自動で補完します。</p>
+                        <div class="mt-4 inline-flex items-center gap-2 bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm">
+                            <i class="fa-solid fa-image"></i>
+                            <span>カメラを起動 / 画像を選ぶ</span>
+                        </div>
+                    </div>
+
+                    <!-- プレビュー画像サムネイル -->
+                    <div id="ai-image-previews" class="hidden flex gap-2 overflow-x-auto py-1"></div>
+
+                    <!-- AI解析中ローディング -->
+                    <div id="ai-loading" class="hidden py-8 text-center space-y-3 bg-slate-50 rounded-2xl border border-slate-200">
+                        <div class="inline-block w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                        <p class="font-bold text-slate-800 text-sm">AIが画像から単語・意味・発音を抽出しています...</p>
+                        <p class="text-xs text-slate-500">数秒〜10秒ほどお待ちください</p>
+                    </div>
+
+                    <!-- エラーメッセージ表示 -->
+                    <div id="ai-error" class="hidden p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-medium"></div>
+
+                    <!-- AI抽出結果プレビュー＆編集リスト -->
+                    <div id="ai-results-container" class="hidden space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                <span id="ai-extracted-count">0個の単語・熟語を検出しました</span>
+                            </span>
+                            <button type="button" onclick="toggleAllExtracted(true)" class="text-xs text-indigo-600 hover:underline font-bold">すべて選択</button>
+                        </div>
+                        <div id="ai-extracted-list" class="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                            <!-- 抽出アイテムがここに入る -->
+                        </div>
+                        <div class="pt-2 flex justify-end gap-2">
+                            <button type="button" onclick="resetAiScanner()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">
+                                やり直す
+                            </button>
+                            <button type="button" onclick="saveExtractedWords()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-md flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>チェックした単語を単語帳に追加</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- [B] 単語入力＆AI自動生成パネル -->
+                <div id="panel-add-manual" class="hidden space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                        <label class="block text-xs font-bold text-slate-700">
+                            英単語 / 熟語を入力してAIにおまかせ <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="manual-word" placeholder="例: inevitable / take advantage of" class="flex-1 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" onkeypress="if(event.key==='Enter'){ event.preventDefault(); autoFillWordWithAI(); }">
+                            <button type="button" id="ai-autofill-btn" onclick="autoFillWordWithAI()" class="shrink-0 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>AIで意味・発音を自動生成</span>
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-400">※英単語や熟語を入れてボタンを押すと、下の項目（種別・品詞・発音記号・日本語訳・例文）が自動入力されます。</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">種別</label>
+                            <select id="manual-type" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="word">単語</option>
+                                <option value="idiom">熟語</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">品詞</label>
+                            <input type="text" id="manual-pos" placeholder="例: 動 / 名 / 形 / 熟" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">発音記号</label>
+                            <input type="text" id="manual-phonetic" placeholder="例: [inévətəbl]" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">日本語の意味 <span class="text-rose-500">*</span></label>
+                        <input type="text" id="manual-meaning" placeholder="例: 避けられない，必然的な" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">例文・補足メモ</label>
+                        <input type="text" id="manual-note" placeholder="例: an inevitable result「必然的な結果」" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div class="pt-2 flex justify-end gap-2">
+                        <button type="button" onclick="saveManualWord(true)" class="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-colors">
+                            追加して続けて入力
+                        </button>
+                        <button type="button" onclick="saveManualWord(false)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md text-xs sm:text-sm transition-colors">
+                            単語帳に追加する
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= モーダル 2: 新規単語帳作成専用モーダル (確実動作・prompt不使用) ================= -->
+    <div id="create-deck-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-folder-plus text-indigo-600"></i>
+                    <span>新しい単語帳を作成</span>
+                </h3>
+                <button onclick="closeCreateDeckModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">単語帳の名前</label>
+                    <input type="text" id="quick-new-deck-input" placeholder="例: 中間テスト範囲 / 英検2級 / 苦手単語" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none" onkeypress="if(event.key==='Enter'){ event.preventDefault(); submitCreateDeckModal(); }">
+                </div>
+                <div class="flex justify-end gap-2 pt-1">
+                    <button type="button" onclick="closeCreateDeckModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">
+                        キャンセル
+                    </button>
+                    <button type="button" onclick="submitCreateDeckModal()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-sm">
+                        作成する
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= モーダル 3: 単語帳管理モーダル ================= -->
+    <div id="deck-manager-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-folder-tree text-indigo-600"></i>
+                    <span>単語帳の整理・新規作成</span>
+                </h3>
+                <button onclick="closeDeckManagerModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- 新規作成フォーム -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">新しい単語帳を作成</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-deck-name" placeholder="例: 期末テスト / 長文に出てきた単語" class="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none" onkeypress="if(event.key==='Enter'){ event.preventDefault(); createNewDeck(); }">
+                        <button type="button" onclick="createNewDeck()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm shrink-0 shadow-sm">
+                            作成
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 既存の単語帳一覧 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">登録済みの単語帳</label>
+                    <div id="deck-manager-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        <!-- JSで動的生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= モーダル 4: 単語帳の名前変更モーダル ================= -->
+    <div id="rename-deck-modal" class="fixed inset-0 z-[55] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h4 class="font-extrabold text-slate-900 text-base">単語帳の名前を変更</h4>
+            <input type="text" id="rename-deck-input" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" onkeypress="if(event.key==='Enter'){ event.preventDefault(); submitRenameDeck(); }">
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeRenameDeckModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">キャンセル</button>
+                <button type="button" onclick="submitRenameDeck()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm">保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= モーダル 5: 確認ダイアログ ================= -->
+    <div id="confirm-modal" class="fixed inset-0 z-[60] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h4 id="confirm-title" class="font-extrabold text-slate-900 text-base">確認</h4>
+            <p id="confirm-message" class="text-sm text-slate-600 leading-relaxed">実行してもよろしいですか？</p>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50">キャンセル</button>
+                <button type="button" id="confirm-ok-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm">実行する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- フッター -->
+    <footer class="text-center py-6 text-xs text-slate-400 border-t border-slate-200 mt-auto bg-white/40">
+        <p id="footer-stats">VocaMaster AI - AI自動生成＆カスタム英単語帳</p>
+    </footer>
+
+    <!-- アプリのロジック -->
+    <script>
+        // ==========================================
+        // 1. 初期状態（クリーンな空の状態からスタート）
+        // ==========================================
+        const DEFAULT_DECK_ID = 'deck_my_default';
+
+        const INITIAL_DECKS = [
+            { id: DEFAULT_DECK_ID, name: 'マイ単語帳', isDefault: true }
+        ];
+
+        // 初期単語は空配列（ユーザーが写真やAI自動生成で自由に追加）
+        const INITIAL_WORDS = [];
+
+        // ==========================================
+        // 2. アプリケーション状態とストレージ管理
+        // ==========================================
+        const STORAGE_KEYS = {
+            DECKS: 'vocamaster_decks_v3',
+            WORDS: 'vocamaster_words_v3',
+            LEARNED: 'vocamaster_learned_v3',
+            SELECTED_DECK: 'vocamaster_selected_deck_v3'
+        };
+
+        let decks = [];
+        let allWords = [];
+        let learnedMap = {};
+        let selectedDeckId = DEFAULT_DECK_ID;
+
+        try {
+            const savedDecks = localStorage.getItem(STORAGE_KEYS.DECKS);
+            decks = savedDecks ? JSON.parse(savedDecks) : [...INITIAL_DECKS];
+            if (!Array.isArray(decks) || decks.length === 0) {
+                decks = [...INITIAL_DECKS];
+            }
+
+            const savedWords = localStorage.getItem(STORAGE_KEYS.WORDS);
+            allWords = savedWords ? JSON.parse(savedWords) : [...INITIAL_WORDS];
+            if (!Array.isArray(allWords)) {
+                allWords = [];
+            }
+
+            const savedLearned = localStorage.getItem(STORAGE_KEYS.LEARNED);
+            learnedMap = savedLearned ? JSON.parse(savedLearned) : {};
+
+            selectedDeckId = localStorage.getItem(STORAGE_KEYS.SELECTED_DECK) || decks[0].id;
+        } catch (e) {
+            decks = [...INITIAL_DECKS];
+            allWords = [];
+            learnedMap = {};
+            selectedDeckId = DEFAULT_DECK_ID;
+        }
+
+        // カード・リスト・クイズ状態
+        let currentTab = 'cards';
+        let currentFilteredCards = [];
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        let listFilterType = 'all';
+        let listFilterStatus = 'all';
+
+        let quizQuestions = [];
+        let quizCurrentIndex = 0;
+        let quizScore = 0;
+
+        let extractedCandidates = [];
+        let renamingDeckId = null;
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.DECKS, JSON.stringify(decks));
+                localStorage.setItem(STORAGE_KEYS.WORDS, JSON.stringify(allWords));
+                localStorage.setItem(STORAGE_KEYS.LEARNED, JSON.stringify(learnedMap));
+                localStorage.setItem(STORAGE_KEYS.SELECTED_DECK, selectedDeckId);
+            } catch (e) {
+                console.error('Storage save failed:', e);
+            }
+        }
+
+        // トースト通知表示
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-rose-600' : (type === 'info' ? 'bg-slate-800' : 'bg-emerald-600');
+            const icon = type === 'error' ? 'fa-circle-exclamation' : (type === 'info' ? 'fa-circle-info' : 'fa-circle-check');
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-2xl shadow-lg text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // カスタム確認ダイアログ
+        let confirmCallback = null;
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            confirmCallback = onConfirm;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            confirmCallback = null;
+        }
+        document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            closeConfirmModal();
+        });
+
+        // ==========================================
+        // 3. 初期化＆単語帳（デッキ）管理
+        // ==========================================
+        window.onload = function() {
+            renderDeckSelectors();
+            refreshCurrentDeckView();
+            setupKeyboardShortcuts();
+        };
+
+        function getDeckWords(deckId = selectedDeckId) {
+            if (deckId === 'ALL') return allWords;
+            return allWords.filter(w => w.deckId === deckId);
+        }
+
+        function getDeckName(deckId) {
+            if (deckId === 'ALL') return 'すべての単語帳';
+            const d = decks.find(item => item.id === deckId);
+            return d ? d.name : 'マイ単語帳';
+        }
+
+        function renderDeckSelectors() {
+            const selector = document.getElementById('deck-selector');
+            if (!decks.some(d => d.id === selectedDeckId) && selectedDeckId !== 'ALL') {
+                selectedDeckId = decks[0] ? decks[0].id : 'ALL';
+            }
+
+            let html = `<option value="ALL">📚 すべての単語帳 (${allWords.length}語)</option>`;
+            decks.forEach(deck => {
+                const count = allWords.filter(w => w.deckId === deck.id).length;
+                html += `<option value="${deck.id}">${escapeHtml(deck.name)} (${count}語)</option>`;
+            });
+            selector.innerHTML = html;
+            selector.value = selectedDeckId;
+
+            const modalSelector = document.getElementById('modal-target-deck');
+            if (modalSelector) {
+                let modalHtml = '';
+                decks.forEach(deck => {
+                    modalHtml += `<option value="${deck.id}">${escapeHtml(deck.name)}</option>`;
+                });
+                modalSelector.innerHTML = modalHtml;
+                if (selectedDeckId !== 'ALL' && decks.some(d => d.id === selectedDeckId)) {
+                    modalSelector.value = selectedDeckId;
+                } else if (decks.length > 0) {
+                    modalSelector.value = decks[0].id;
+                }
+            }
+
+            document.getElementById('footer-stats').innerText = `VocaMaster AI - 全${decks.length}単語帳 / 計${allWords.length}語収録`;
+        }
+
+        function selectDeck(deckId) {
+            selectedDeckId = deckId;
+            saveState();
+            refreshCurrentDeckView();
+        }
+
+        function refreshCurrentDeckView() {
+            updateProgress();
+            const deckWords = getDeckWords();
+            const emptyBanner = document.getElementById('empty-deck-banner');
+
+            // 単語が0件の場合はウェルカム/空状態バナーを表示し、各ビューは隠す
+            if (deckWords.length === 0) {
+                emptyBanner.classList.remove('hidden');
+                ['cards', 'list', 'quiz'].forEach(id => {
+                    document.getElementById(`view-${id}`).classList.add('hidden');
+                });
+            } else {
+                emptyBanner.classList.add('hidden');
+                ['cards', 'list', 'quiz'].forEach(id => {
+                    if (id === currentTab) {
+                        document.getElementById(`view-${id}`).classList.remove('hidden');
+                    } else {
+                        document.getElementById(`view-${id}`).classList.add('hidden');
+                    }
+                });
+                initCards();
+                renderList();
+            }
+
+            document.getElementById('quiz-deck-info').innerText = `「${getDeckName(selectedDeckId)}」(${deckWords.length}語) からランダムに出題されます。理解度をチェックしましょう！`;
+        }
+
+        // --- 新規単語帳作成専用モーダル (ヘッダーの「新規」ボタンから) ---
+        function openCreateDeckModal() {
+            const input = document.getElementById('quick-new-deck-input');
+            input.value = '';
+            document.getElementById('create-deck-modal').classList.remove('hidden');
+            setTimeout(() => input.focus(), 50);
+        }
+
+        function closeCreateDeckModal() {
+            document.getElementById('create-deck-modal').classList.add('hidden');
+        }
+
+        function submitCreateDeckModal() {
+            const input = document.getElementById('quick-new-deck-input');
+            const name = input.value.trim();
+            if (!name) {
+                showToast('単語帳の名前を入力してください', 'error');
+                input.focus();
+                return;
+            }
+            const newDeck = addDeckInternal(name);
+            selectedDeckId = newDeck.id;
+            saveState();
+            renderDeckSelectors();
+            refreshCurrentDeckView();
+            closeCreateDeckModal();
+            showToast(`単語帳「${name}」を作成しました！`);
+        }
+
+        // 内部共通：デッキ追加処理
+        function addDeckInternal(name) {
+            const newDeck = {
+                id: 'deck_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                name: name,
+                isDefault: false
+            };
+            decks.push(newDeck);
+            return newDeck;
+        }
+
+        // --- 単語帳管理モーダル ---
+        function openDeckManagerModal() {
+            renderDeckManagerList();
+            document.getElementById('deck-manager-modal').classList.remove('hidden');
+        }
+
+        function closeDeckManagerModal() {
+            document.getElementById('deck-manager-modal').classList.add('hidden');
+        }
+
+        function renderDeckManagerList() {
+            const listEl = document.getElementById('deck-manager-list');
+            listEl.innerHTML = '';
+
+            decks.forEach(deck => {
+                const count = allWords.filter(w => w.deckId === deck.id).length;
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200';
+                row.innerHTML = `
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-bold text-slate-800 truncate">${escapeHtml(deck.name)}</p>
+                        <p class="text-[11px] text-slate-400">収録数: ${count}語</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button type="button" onclick="openRenameDeckModal('${deck.id}')" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="名前を変更">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+                        ${decks.length > 1 ? `
+                        <button type="button" onclick="confirmDeleteDeck('${deck.id}')" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="単語帳を削除">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                        ` : `<span class="text-[10px] px-2 py-1 bg-slate-200/70 text-slate-500 rounded-md font-bold">基本</span>`}
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        function createNewDeck() {
+            const input = document.getElementById('new-deck-name');
+            const name = input.value.trim();
+            if (!name) {
+                showToast('単語帳の名前を入力してください', 'error');
+                input.focus();
+                return;
+            }
+            const newDeck = addDeckInternal(name);
+            selectedDeckId = newDeck.id;
+            saveState();
+            input.value = '';
+            renderDeckSelectors();
+            renderDeckManagerList();
+            refreshCurrentDeckView();
+            showToast(`単語帳「${name}」を作成しました！`);
+        }
+
+        // モーダル内のインライン新規作成
+        function toggleInlineDeckCreate() {
+            const box = document.getElementById('inline-deck-create-box');
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) {
+                document.getElementById('inline-new-deck-name').focus();
+            }
+        }
+
+        function createInlineDeck() {
+            const input = document.getElementById('inline-new-deck-name');
+            const name = input.value.trim();
+            if (!name) {
+                showToast('新しい単語帳名を入力してください', 'error');
+                input.focus();
+                return;
+            }
+            const newDeck = addDeckInternal(name);
+            saveState();
+            input.value = '';
+            document.getElementById('inline-deck-create-box').classList.add('hidden');
+            renderDeckSelectors();
+            document.getElementById('modal-target-deck').value = newDeck.id;
+            showToast(`単語帳「${name}」を作成・選択しました！`);
+        }
+
+        // カスタム名前変更モーダル (prompt不使用)
+        function openRenameDeckModal(deckId) {
+            const deck = decks.find(d => d.id === deckId);
+            if (!deck) return;
+            renamingDeckId = deckId;
+            const input = document.getElementById('rename-deck-input');
+            input.value = deck.name;
+            document.getElementById('rename-deck-modal').classList.remove('hidden');
+            setTimeout(() => input.focus(), 50);
+        }
+
+        function closeRenameDeckModal() {
+            document.getElementById('rename-deck-modal').classList.add('hidden');
+            renamingDeckId = null;
+        }
+
+        function submitRenameDeck() {
+            if (!renamingDeckId) return;
+            const deck = decks.find(d => d.id === renamingDeckId);
+            const newName = document.getElementById('rename-deck-input').value.trim();
+            if (!newName) {
+                showToast('単語帳名を入力してください', 'error');
+                return;
+            }
+            if (deck) {
+                deck.name = newName;
+                saveState();
+                renderDeckSelectors();
+                renderDeckManagerList();
+                refreshCurrentDeckView();
+                showToast('単語帳名を変更しました');
+            }
+            closeRenameDeckModal();
+        }
+
+        function confirmDeleteDeck(deckId) {
+            const deck = decks.find(d => d.id === deckId);
+            if (!deck) return;
+            const count = allWords.filter(w => w.deckId === deckId).length;
+            openConfirmModal(
+                '単語帳の削除',
+                `「${deck.name}」（${count}語）を削除しますか？中の単語もすべて削除されます。`,
+                () => {
+                    decks = decks.filter(d => d.id !== deckId);
+                    allWords = allWords.filter(w => w.deckId !== deckId);
+                    if (selectedDeckId === deckId) {
+                        selectedDeckId = decks[0] ? decks[0].id : 'ALL';
+                    }
+                    saveState();
+                    renderDeckSelectors();
+                    renderDeckManagerList();
+                    refreshCurrentDeckView();
+                    showToast('単語帳を削除しました', 'info');
+                }
+            );
+        }
+
+        // ==========================================
+        // 4. タブ切り替え＆進捗バー
+        // ==========================================
+        function switchTab(tabId) {
+            currentTab = tabId;
+            ['cards', 'list', 'quiz'].forEach(id => {
+                document.getElementById(`tab-${id}`).className = "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 text-slate-600 hover:text-slate-900";
+            });
+            document.getElementById(`tab-${tabId}`).className = "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 bg-white text-indigo-600 shadow-sm";
+
+            refreshCurrentDeckView();
+        }
+
+        function updateProgress() {
+            const deckWords = getDeckWords();
+            const total = deckWords.length;
+            const learnedCount = deckWords.filter(item => learnedMap[item.id]).length;
+            const percentage = total === 0 ? 0 : Math.round((learnedCount / total) * 100);
+
+            document.getElementById('progress-deck-label').innerText = `${getDeckName(selectedDeckId)} の習得進捗`;
+            document.getElementById('progress-text').innerText = `${learnedCount} / ${total} (${percentage}%)`;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+        }
+
+        function confirmResetDeckProgress() {
+            const deckWords = getDeckWords();
+            if (deckWords.length === 0) {
+                showToast('リセットする単語がありません', 'info');
+                return;
+            }
+            const deckName = getDeckName(selectedDeckId);
+            openConfirmModal(
+                '習得状況のリセット',
+                `「${deckName}」の習得済みチェックをすべて未習得に戻しますか？`,
+                () => {
+                    deckWords.forEach(w => {
+                        delete learnedMap[w.id];
+                    });
+                    saveState();
+                    refreshCurrentDeckView();
+                    showToast('進捗をリセットしました', 'info');
+                }
+            );
+        }
+
+        // ==========================================
+        // 5. カードモード機能
+        // ==========================================
+        function filterCards() {
+            const filterVal = document.getElementById('card-filter').value;
+            const baseWords = getDeckWords();
+
+            if (filterVal === 'all') {
+                currentFilteredCards = [...baseWords];
+            } else if (filterVal === 'word' || filterVal === 'idiom') {
+                currentFilteredCards = baseWords.filter(item => item.type === filterVal);
+            } else if (filterVal === 'unlearned') {
+                currentFilteredCards = baseWords.filter(item => !learnedMap[item.id]);
+            } else if (filterVal === 'learned') {
+                currentFilteredCards = baseWords.filter(item => learnedMap[item.id]);
+            }
+
+            currentCardIndex = 0;
+            if (isFlipped) {
+                isFlipped = false;
+                document.getElementById('flashcard').style.transform = 'rotateY(0deg)';
+            }
+            loadCardContent();
+        }
+
+        function shuffleCards() {
+            for (let i = currentFilteredCards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentFilteredCards[i], currentFilteredCards[j]] = [currentFilteredCards[j], currentFilteredCards[i]];
+            }
+            currentCardIndex = 0;
+            if (isFlipped) {
+                isFlipped = false;
+                document.getElementById('flashcard').style.transform = 'rotateY(0deg)';
+            }
+            loadCardContent();
+            showToast('カードをシャッフルしました', 'info');
+        }
+
+        function initCards() {
+            filterCards();
+        }
+
+        function loadCardContent() {
+            const noteEl = document.getElementById('card-note');
+            if (currentFilteredCards.length === 0) {
+                document.getElementById('card-word').innerText = '該当なし';
+                document.getElementById('card-phonetic').innerText = '';
+                document.getElementById('card-type-badge').innerText = '-';
+                document.getElementById('card-deck-badge').innerText = getDeckName(selectedDeckId);
+                document.getElementById('card-meaning').innerText = '条件に一致するカードがありません。フィルターを変更してください。';
+                document.getElementById('card-word-back').innerText = '-';
+                document.getElementById('card-pos').innerText = '-';
+                noteEl.classList.add('hidden');
+                document.getElementById('card-counter').innerText = '0 / 0';
+                document.getElementById('card-counter-back').innerText = '0 / 0';
+                return;
+            }
+
+            if (currentCardIndex >= currentFilteredCards.length) {
+                currentCardIndex = 0;
+            }
+
+            const item = currentFilteredCards[currentCardIndex];
+            const isLearned = !!learnedMap[item.id];
+
+            document.getElementById('card-word').innerText = item.word;
+            document.getElementById('card-phonetic').innerText = item.phonetic || '';
+            document.getElementById('card-type-badge').innerText = item.type === 'word' ? '単語' : '熟語';
+            document.getElementById('card-deck-badge').innerText = getDeckName(item.deckId);
+            document.getElementById('card-counter').innerText = `${currentCardIndex + 1} / ${currentFilteredCards.length}`;
+
+            document.getElementById('card-word-back').innerText = item.word;
+            document.getElementById('card-pos').innerText = item.pos || (item.type === 'idiom' ? '熟' : '語');
+            document.getElementById('card-meaning').innerText = item.meaning;
+            document.getElementById('card-counter-back').innerText = `${currentCardIndex + 1} / ${currentFilteredCards.length}`;
+
+            if (item.note && item.note.trim()) {
+                noteEl.innerText = item.note;
+                noteEl.classList.remove('hidden');
+            } else {
+                noteEl.classList.add('hidden');
+            }
+
+            const btn = document.getElementById('learned-btn');
+            if (isLearned) {
+                btn.className = "w-full sm:w-auto flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-5 rounded-2xl shadow-sm transition-all flex items-center justify-center active:scale-95";
+                btn.innerHTML = '<i class="fa-solid fa-check-double mr-2"></i>習得済み';
+            } else {
+                btn.className = "w-full sm:w-auto flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold py-3.5 px-5 rounded-2xl shadow-sm transition-all flex items-center justify-center active:scale-95";
+                btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>覚えたにする';
+            }
+        }
+
+        function flipCard() {
+            if (currentFilteredCards.length === 0) return;
+            isFlipped = !isFlipped;
+            const card = document.getElementById('flashcard');
+            card.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+        }
+
+        function nextCard() {
+            if (currentFilteredCards.length === 0) return;
+            if (isFlipped) {
+                isFlipped = false;
+                document.getElementById('flashcard').style.transform = 'rotateY(0deg)';
+                setTimeout(() => {
+                    currentCardIndex = (currentCardIndex + 1) % currentFilteredCards.length;
+                    loadCardContent();
+                }, 180);
+            } else {
+                currentCardIndex = (currentCardIndex + 1) % currentFilteredCards.length;
+                loadCardContent();
+            }
+        }
+
+        function prevCard() {
+            if (currentFilteredCards.length === 0) return;
+            if (isFlipped) {
+                isFlipped = false;
+                document.getElementById('flashcard').style.transform = 'rotateY(0deg)';
+                setTimeout(() => {
+                    currentCardIndex = (currentCardIndex - 1 + currentFilteredCards.length) % currentFilteredCards.length;
+                    loadCardContent();
+                }, 180);
+            } else {
+                currentCardIndex = (currentCardIndex - 1 + currentFilteredCards.length) % currentFilteredCards.length;
+                loadCardContent();
+            }
+        }
+
+        function toggleLearnedStatus() {
+            if (currentFilteredCards.length === 0) return;
+            const item = currentFilteredCards[currentCardIndex];
+            learnedMap[item.id] = !learnedMap[item.id];
+            saveState();
+            updateProgress();
+            loadCardContent();
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const cleanText = text.split('/')[0].replace(/～|~/g, ' something ').replace(/\[.*?\]|\(.*?\)/g, '').trim();
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakWord() {
+            if (currentFilteredCards.length === 0) return;
+            speakText(currentFilteredCards[currentCardIndex].word);
+        }
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+                if (!document.getElementById('add-word-modal').classList.contains('hidden')) return;
+                if (!document.getElementById('deck-manager-modal').classList.contains('hidden')) return;
+                if (!document.getElementById('create-deck-modal').classList.contains('hidden')) return;
+                if (document.getElementById('view-cards').classList.contains('hidden')) return;
+
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    flipCard();
+                } else if (e.code === 'ArrowRight') {
+                    nextCard();
+                } else if (e.code === 'ArrowLeft') {
+                    prevCard();
+                }
+            });
+        }
+
+        // ==========================================
+        // 6. 一覧リストモード機能
+        // ==========================================
+        function setListFilter(category, val) {
+            if (category === 'type') {
+                listFilterType = val;
+                ['all', 'word', 'idiom'].forEach(t => {
+                    const btn = document.getElementById(`filter-type-${t}`);
+                    btn.className = t === val
+                        ? "px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white transition-colors"
+                        : "px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors";
+                });
+            } else if (category === 'status') {
+                listFilterStatus = val;
+                ['all', 'unlearned', 'learned'].forEach(s => {
+                    const btn = document.getElementById(`filter-status-${s}`);
+                    btn.className = s === val
+                        ? "px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 text-white transition-colors"
+                        : "px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors";
+                });
+            }
+            renderList();
+        }
+
+        function renderList() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const container = document.getElementById('vocab-list-container');
+            container.innerHTML = '';
+
+            const deckWords = getDeckWords();
+            const filtered = deckWords.filter(item => {
+                if (listFilterType !== 'all' && item.type !== listFilterType) return false;
+                const isLearned = !!learnedMap[item.id];
+                if (listFilterStatus === 'unlearned' && isLearned) return false;
+                if (listFilterStatus === 'learned' && !isLearned) return false;
+                if (query) {
+                    const matchWord = item.word.toLowerCase().includes(query);
+                    const matchMeaning = item.meaning.toLowerCase().includes(query);
+                    const matchNote = item.note && item.note.toLowerCase().includes(query);
+                    if (!matchWord && !matchMeaning && !matchNote) return false;
+                }
+                return true;
+            });
+
+            document.getElementById('list-count-label').innerText = `表示中: ${filtered.length}件 / 全${deckWords.length}件`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400 text-sm">該当する単語・熟語が見つかりませんでした</div>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isLearned = !!learnedMap[item.id];
+                const cardEl = document.createElement('div');
+                cardEl.className = `p-4 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${isLearned ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-slate-200 hover:border-indigo-200 shadow-sm'}`;
+                
+                let deckOptions = '';
+                decks.forEach(d => {
+                    deckOptions += `<option value="${d.id}" ${d.id === item.deckId ? 'selected' : ''}>${escapeHtml(d.name)}</option>`;
+                });
+
+                cardEl.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${item.type === 'word' ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}">${item.type === 'word' ? '単語' : '熟語'}</span>
+                                <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded">${escapeHtml(item.pos || '熟')}</span>
+                                <span class="text-xs text-slate-400 font-mono">${escapeHtml(item.phonetic || '')}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-base sm:text-lg font-extrabold text-slate-900 break-words">${escapeHtml(item.word)}</h3>
+                                <button type="button" onclick="speakText('${escapeAttr(item.word)}')" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="発音">
+                                    <i class="fa-solid fa-volume-high text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="toggleListItem('${item.id}')" class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center ${isLearned ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="fa-solid fa-check mr-1"></i>${isLearned ? '習得済' : '未習得'}
+                        </button>
+                    </div>
+                    <div class="border-t border-slate-100 pt-2 space-y-1">
+                        <p class="text-sm font-medium text-slate-700">${escapeHtml(item.meaning)}</p>
+                        ${item.note ? `<p class="text-xs text-slate-400">${escapeHtml(item.note)}</p>` : ''}
+                    </div>
+                    <div class="flex items-center justify-between pt-1.5 border-t border-slate-100/80 text-[11px]">
+                        <div class="flex items-center gap-1 text-slate-400 max-w-[70%]">
+                            <i class="fa-solid fa-folder text-[10px]"></i>
+                            <select onchange="moveWordToDeck('${item.id}', this.value)" class="bg-transparent text-slate-500 font-medium truncate outline-none hover:text-indigo-600 cursor-pointer" title="別の単語帳へ移動">
+                                ${deckOptions}
+                            </select>
+                        </div>
+                        <button type="button" onclick="confirmDeleteWord('${item.id}')" class="text-slate-400 hover:text-rose-600 px-2 py-0.5 rounded transition-colors" title="この単語を削除">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(cardEl);
+            });
+        }
+
+        function toggleListItem(id) {
+            learnedMap[id] = !learnedMap[id];
+            saveState();
+            updateProgress();
+            renderList();
+        }
+
+        function moveWordToDeck(wordId, targetDeckId) {
+            const word = allWords.find(w => w.id === wordId);
+            if (word) {
+                word.deckId = targetDeckId;
+                saveState();
+                renderDeckSelectors();
+                refreshCurrentDeckView();
+                showToast(`「${getDeckName(targetDeckId)}」へ移動しました`, 'info');
+            }
+        }
+
+        function confirmDeleteWord(wordId) {
+            const word = allWords.find(w => w.id === wordId);
+            if (!word) return;
+            openConfirmModal(
+                '単語の削除',
+                `「${word.word}」を単語帳から削除しますか？`,
+                () => {
+                    allWords = allWords.filter(w => w.id !== wordId);
+                    delete learnedMap[wordId];
+                    saveState();
+                    renderDeckSelectors();
+                    refreshCurrentDeckView();
+                    showToast('単語を削除しました', 'info');
+                }
+            );
+        }
+
+        // ==========================================
+        // 7. 4択クイズモード機能（少数語でも動作対応）
+        // ==========================================
+        const FALLBACK_DISTRACTORS = [
+            '～を成し遂げる，達成する',
+            '避けられない，必然的な',
+            '～に頼る，～を当てにする',
+            '一時的な，仮の',
+            '～を調査する，調べる',
+            '十分な，適切な'
+        ];
+
+        function startQuiz() {
+            const deckWords = getDeckWords();
+            if (deckWords.length === 0) {
+                showToast('まずは単語を追加してください', 'error');
+                return;
+            }
+
+            const shuffled = [...deckWords].sort(() => 0.5 - Math.random());
+            quizQuestions = shuffled.slice(0, Math.min(10, deckWords.length));
+            quizCurrentIndex = 0;
+            quizScore = 0;
+
+            document.getElementById('quiz-start-screen').classList.add('hidden');
+            document.getElementById('quiz-result-screen').classList.add('hidden');
+            document.getElementById('quiz-game-screen').classList.remove('hidden');
+
+            loadQuizQuestion();
+        }
+
+        function loadQuizQuestion() {
+            document.getElementById('quiz-next-container').classList.add('hidden');
+            const currentItem = quizQuestions[quizCurrentIndex];
+            
+            document.getElementById('quiz-progress-count').innerText = `問題 ${quizCurrentIndex + 1} / ${quizQuestions.length}`;
+            document.getElementById('quiz-score').innerText = quizScore;
+            document.getElementById('quiz-type-badge').innerText = currentItem.type === 'word' ? '単語テスト' : '熟語テスト';
+            document.getElementById('quiz-question-word').innerText = currentItem.word;
+            document.getElementById('quiz-question-phonetic').innerText = currentItem.phonetic || '';
+
+            // 選択肢作成 (デッキ内 -> 全単語 -> ダミー選択肢の順で4択を確保)
+            let pool = getDeckWords().filter(item => item.id !== currentItem.id && item.meaning !== currentItem.meaning);
+            if (pool.length < 3) {
+                const extra = allWords.filter(item => item.id !== currentItem.id && item.meaning !== currentItem.meaning && !pool.some(p => p.id === item.id));
+                pool = [...pool, ...extra];
+            }
+
+            const wrongMeanings = pool.sort(() => 0.5 - Math.random()).slice(0, 3).map(item => item.meaning);
+            for (const fallback of FALLBACK_DISTRACTORS) {
+                if (wrongMeanings.length >= 3) break;
+                if (fallback !== currentItem.meaning && !wrongMeanings.includes(fallback)) {
+                    wrongMeanings.push(fallback);
+                }
+            }
+
+            const options = [
+                { text: currentItem.meaning, isCorrect: true },
+                ...wrongMeanings.map(m => ({ text: m, isCorrect: false }))
+            ].sort(() => 0.5 - Math.random());
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-2xl border border-slate-200 bg-white hover:bg-indigo-50/50 hover:border-indigo-300 text-slate-700 font-medium text-sm transition-all shadow-sm flex justify-between items-center gap-2";
+                btn.innerHTML = `<span>${escapeHtml(opt.text)}</span><i class="fa-solid fa-chevron-right text-xs text-slate-300 shrink-0"></i>`;
+                btn.onclick = () => selectQuizAnswer(opt.isCorrect, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function speakQuizWord() {
+            if (quizQuestions[quizCurrentIndex]) {
+                speakText(quizQuestions[quizCurrentIndex].word);
+            }
+        }
+
+        function selectQuizAnswer(isCorrect, selectedBtn) {
+            const buttons = document.getElementById('quiz-options').getElementsByTagName('button');
+            const correctItem = quizQuestions[quizCurrentIndex];
+            
+            for (let btn of buttons) {
+                btn.disabled = true;
+                if (btn.querySelector('span').innerText === correctItem.meaning) {
+                    btn.className = "w-full text-left p-4 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-900 font-bold text-sm shadow-sm flex justify-between items-center gap-2";
+                }
+            }
+
+            if (isCorrect) {
+                quizScore++;
+                selectedBtn.className = "w-full text-left p-4 rounded-2xl border border-emerald-500 bg-emerald-600 text-white font-bold text-sm shadow-md flex justify-between items-center gap-2";
+            } else {
+                selectedBtn.className = "w-full text-left p-4 rounded-2xl border border-rose-300 bg-rose-50 text-rose-900 font-bold text-sm shadow-sm flex justify-between items-center gap-2";
+            }
+
+            document.getElementById('quiz-score').innerText = quizScore;
+            document.getElementById('quiz-next-container').classList.remove('hidden');
+        }
+
+        function nextQuizQuestion() {
+            quizCurrentIndex++;
+            if (quizCurrentIndex < quizQuestions.length) {
+                loadQuizQuestion();
+            } else {
+                showQuizResult();
+            }
+        }
+
+        function showQuizResult() {
+            document.getElementById('quiz-game-screen').classList.add('hidden');
+            document.getElementById('final-score').innerText = quizScore;
+            document.getElementById('final-total').innerText = quizQuestions.length;
+            
+            const rate = quizScore / quizQuestions.length;
+            let comment = "よく頑張りました！さらに復習を進めましょう。";
+            if (rate === 1) comment = "完璧です！全問正解おめでとうございます！";
+            else if (rate >= 0.8) comment = "素晴らしい成績です！しっかり定着しています。";
+            else if (rate >= 0.5) comment = "合格ラインです！間違えた単語をカードモードで復習しましょう。";
+
+            document.getElementById('quiz-comment').innerText = comment;
+            document.getElementById('quiz-result-screen').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 8. Gemini AI 連携機能（写真抽出 ＆ 単語入力AI自動生成）
+        // ==========================================
+        function openAddModal(mode = 'ai') {
+            renderDeckSelectors();
+            switchAddMode(mode);
+            document.getElementById('inline-deck-create-box').classList.add('hidden');
+            document.getElementById('add-word-modal').classList.remove('hidden');
+            if (mode === 'manual') {
+                setTimeout(() => document.getElementById('manual-word').focus(), 50);
+            }
+        }
+
+        function closeAddModal() {
+            document.getElementById('add-word-modal').classList.add('hidden');
+        }
+
+        function switchAddMode(mode) {
+            const aiTab = document.getElementById('add-tab-ai');
+            const manualTab = document.getElementById('add-tab-manual');
+            const aiPanel = document.getElementById('panel-add-ai');
+            const manualPanel = document.getElementById('panel-add-manual');
+
+            if (mode === 'ai') {
+                aiTab.className = "px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 transition-colors";
+                manualTab.className = "px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors";
+                aiPanel.classList.remove('hidden');
+                manualPanel.classList.add('hidden');
+            } else {
+                manualTab.className = "px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 transition-colors";
+                aiTab.className = "px-4 py-2 text-xs sm:text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors";
+                manualPanel.classList.remove('hidden');
+                aiPanel.classList.add('hidden');
+            }
+        }
+
+        // Gemini API 共通呼び出し (gemini-3-flash-preview / 指数バックオフ付き)
+        async function fetchGeminiWithRetry(payload, maxRetries = 4) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (err) {
+                    if (attempt === maxRetries) throw err;
+                    const delay = Math.pow(2, attempt) * 1000;
+                    await new Promise(res => setTimeout(res, delay));
+                }
+            }
+        }
+
+        // --- [機能A] 英単語入力 → AIが発音記号・日本語意味・品詞・例文を自動生成 ---
+        async function autoFillWordWithAI() {
+            const wordInput = document.getElementById('manual-word');
+            const word = wordInput.value.trim();
+            if (!word) {
+                showToast('先に英単語または熟語を入力してください', 'error');
+                wordInput.focus();
+                return;
+            }
+
+            const btn = document.getElementById('ai-autofill-btn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>AI生成中...</span>`;
+
+            try {
+                const payload = {
+                    contents: [{
+                        role: "user",
+                        parts: [{
+                            text: `英語学習用の単語帳データを作成してください。入力された英語表現: "${word}"
+                            
+                            以下の情報をJSONで返してください：
+                            - word: 整形された英単語または熟語（元の表現を尊重）
+                            - type: 1語なら "word"、2語以上の熟語・イディオム・連語なら "idiom"
+                            - pos: 日本語の品詞（「名」「動」「形」「副」「前」「接」「熟」など簡潔に）
+                            - phonetic: アメリカ英語の国際音声記号（IPA）を角括弧付きで（例: "[inévətəbl]"）。熟語などで不要な場合は空文字でも可。
+                            - meaning: 日本語の代表的な意味を簡潔かつ分かりやすく（複数ある場合は「，」や「；」で区切る）
+                            - note: 試験や日常で役立つ短い英語用例とその日本語訳（例: "an inevitable result「必然的な結果」"）`
+                        }]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                word: { type: "STRING" },
+                                type: { type: "STRING", enum: ["word", "idiom"] },
+                                pos: { type: "STRING" },
+                                phonetic: { type: "STRING" },
+                                meaning: { type: "STRING" },
+                                note: { type: "STRING" }
+                            },
+                            required: ["word", "type", "pos", "phonetic", "meaning", "note"]
+                        }
+                    }
+                };
+
+                const result = await fetchGeminiWithRetry(payload);
+                const textResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!textResponse) throw new Error('AIからデータを取得できませんでした');
+
+                const data = JSON.parse(textResponse);
+                document.getElementById('manual-word').value = data.word || word;
+                document.getElementById('manual-type').value = data.type === 'idiom' ? 'idiom' : 'word';
+                document.getElementById('manual-pos').value = data.pos || '';
+                document.getElementById('manual-phonetic').value = data.phonetic || '';
+                document.getElementById('manual-meaning').value = data.meaning || '';
+                document.getElementById('manual-note').value = data.note || '';
+
+                showToast('AIが発音記号・日本語訳・例文を自動入力しました！');
+            } catch (err) {
+                showToast('AI自動生成に失敗しました。もう一度お試しください。', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        function saveManualWord(keepOpen = false) {
+            const targetDeckId = document.getElementById('modal-target-deck').value;
+            const word = document.getElementById('manual-word').value.trim();
+            const type = document.getElementById('manual-type').value;
+            const pos = document.getElementById('manual-pos').value.trim();
+            const phonetic = document.getElementById('manual-phonetic').value.trim();
+            const meaning = document.getElementById('manual-meaning').value.trim();
+            const note = document.getElementById('manual-note').value.trim();
+
+            if (!word || !meaning) {
+                showToast('英単語と日本語の意味を入力（またはAI自動生成）してください', 'error');
+                return;
+            }
+
+            allWords.unshift({
+                id: 'w_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                deckId: targetDeckId,
+                type: type,
+                word: word,
+                phonetic: phonetic,
+                pos: pos || (type === 'idiom' ? '熟' : '語'),
+                meaning: meaning,
+                note: note
+            });
+
+            document.getElementById('manual-word').value = '';
+            document.getElementById('manual-pos').value = '';
+            document.getElementById('manual-phonetic').value = '';
+            document.getElementById('manual-meaning').value = '';
+            document.getElementById('manual-note').value = '';
+
+            selectedDeckId = targetDeckId;
+            saveState();
+            renderDeckSelectors();
+            refreshCurrentDeckView();
+            showToast(`「${word}」を「${getDeckName(targetDeckId)}」に追加しました！`);
+
+            if (keepOpen) {
+                document.getElementById('manual-word').focus();
+            } else {
+                closeAddModal();
+            }
+        }
+
+        // --- [機能B] 写真からAI自動抽出＆不足情報の自動補完 ---
+        function resetAiScanner() {
+            document.getElementById('photo-input').value = '';
+            document.getElementById('ai-upload-area').classList.remove('hidden');
+            document.getElementById('ai-image-previews').classList.add('hidden');
+            document.getElementById('ai-image-previews').innerHTML = '';
+            document.getElementById('ai-loading').classList.add('hidden');
+            document.getElementById('ai-error').classList.add('hidden');
+            document.getElementById('ai-results-container').classList.add('hidden');
+            extractedCandidates = [];
+        }
+
+        function compressImageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const MAX_SIZE = 1400;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > MAX_SIZE || height > MAX_SIZE) {
+                            if (width > height) {
+                                height = Math.round((height * MAX_SIZE) / width);
+                                width = MAX_SIZE;
+                            } else {
+                                width = Math.round((width * MAX_SIZE) / height);
+                                height = MAX_SIZE;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        const base64 = dataUrl.split(',')[1];
+                        resolve({ base64, mimeType: 'image/jpeg', previewUrl: dataUrl });
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handlePhotoUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            const uploadArea = document.getElementById('ai-upload-area');
+            const previewsEl = document.getElementById('ai-image-previews');
+            const loadingEl = document.getElementById('ai-loading');
+            const errorEl = document.getElementById('ai-error');
+            const resultsEl = document.getElementById('ai-results-container');
+
+            uploadArea.classList.add('hidden');
+            errorEl.classList.add('hidden');
+            resultsEl.classList.add('hidden');
+            previewsEl.innerHTML = '';
+            previewsEl.classList.remove('hidden');
+            loadingEl.classList.remove('hidden');
+
+            try {
+                const processedImages = await Promise.all(files.map(f => compressImageToBase64(f)));
+
+                processedImages.forEach(img => {
+                    const thumb = document.createElement('img');
+                    thumb.src = img.previewUrl;
+                    thumb.className = "h-20 w-20 object-cover rounded-xl border border-slate-200 shadow-sm shrink-0";
+                    previewsEl.appendChild(thumb);
+                });
+
+                const parts = [
+                    {
+                        text: `あなたは優秀な英語学習アシスタントです。添付された単語帳・教科書・プリント・ノートなどの画像から、学習すべき英単語と英熟語をすべて抽出してください。
+                        
+                        【重要：AIによる自動補完ルール】
+                        - 1語のみの場合は type を "word"、2語以上のイディオム・熟語・連語の場合は type を "idiom" にしてください。
+                        - 画像に発音記号が書かれていない場合でも、あなたの英語知識を使ってアメリカ英語の正確な発音記号（IPA、例: "[ərést]"）を phonetic に自動補完してください。
+                        - 品詞（名、動、形、副、前、接、熟など）を pos に自動入力してください。
+                        - 画像に日本語訳が書かれていない（英語だけのプリントや長文中のマーカー単語などの）場合でも、自然で分かりやすい日本語の意味を meaning に自動翻訳して入れてください。
+                        - 画像内の用例や、学習に役立つ短いフレーズ例・訳を note に記載してください。
+                        - ページ番号や単なる見出しは除外してください。`
+                    }
+                ];
+
+                processedImages.forEach(img => {
+                    parts.push({
+                        inlineData: {
+                            mimeType: img.mimeType,
+                            data: img.base64
+                        }
+                    });
+                });
+
+                const payload = {
+                    contents: [{ role: "user", parts: parts }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    word: { type: "STRING" },
+                                    type: { type: "STRING", enum: ["word", "idiom"] },
+                                    phonetic: { type: "STRING" },
+                                    pos: { type: "STRING" },
+                                    meaning: { type: "STRING" },
+                                    note: { type: "STRING" }
+                                },
+                                required: ["word", "type", "phonetic", "pos", "meaning"]
+                            }
+                        }
+                    }
+                };
+
+                const result = await fetchGeminiWithRetry(payload);
+                const textResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!textResponse) {
+                    throw new Error("AIからの応答が空でした。別の写真でお試しください。");
+                }
+
+                const parsedList = JSON.parse(textResponse);
+                if (!Array.isArray(parsedList) || parsedList.length === 0) {
+                    throw new Error("画像から英単語・熟語を検出できませんでした。文字がはっきり写っている写真をお試しください。");
+                }
+
+                extractedCandidates = parsedList.map((item, idx) => ({
+                    tempId: idx,
+                    selected: true,
+                    word: item.word || '',
+                    type: item.type === 'idiom' ? 'idiom' : 'word',
+                    phonetic: item.phonetic || '',
+                    pos: item.pos || (item.type === 'idiom' ? '熟' : '語'),
+                    meaning: item.meaning || '',
+                    note: item.note || ''
+                }));
+
+                loadingEl.classList.add('hidden');
+                renderExtractedCandidates();
+                resultsEl.classList.remove('hidden');
+
+            } catch (error) {
+                loadingEl.classList.add('hidden');
+                uploadArea.classList.remove('hidden');
+                errorEl.innerText = `解析エラー: ${error.message || '画像の読み取りに失敗しました。もう一度お試しください。'}`;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function renderExtractedCandidates() {
+            const listEl = document.getElementById('ai-extracted-list');
+            document.getElementById('ai-extracted-count').innerText = `${extractedCandidates.length}個の単語・熟語を検出・補完しました`;
+            listEl.innerHTML = '';
+
+            extractedCandidates.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = `p-3 rounded-xl border transition-all ${item.selected ? 'bg-white border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60'}`;
+                row.innerHTML = `
+                    <div class="flex items-start gap-2.5">
+                        <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="extractedCandidates[${index}].selected = this.checked; renderExtractedCandidates();" class="mt-1.5 w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer">
+                        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <select onchange="extractedCandidates[${index}].type = this.value" class="text-[10px] font-bold bg-indigo-50 text-indigo-700 rounded px-1.5 py-0.5 outline-none">
+                                        <option value="word" ${item.type === 'word' ? 'selected' : ''}>単語</option>
+                                        <option value="idiom" ${item.type === 'idiom' ? 'selected' : ''}>熟語</option>
+                                    </select>
+                                    <input type="text" value="${escapeAttr(item.pos)}" onchange="extractedCandidates[${index}].pos = this.value" class="w-10 text-[10px] font-bold bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 text-center outline-none" placeholder="品詞">
+                                    <input type="text" value="${escapeAttr(item.phonetic)}" onchange="extractedCandidates[${index}].phonetic = this.value" class="flex-1 text-[11px] font-mono text-slate-400 bg-transparent border-b border-transparent focus:border-indigo-300 outline-none" placeholder="発音記号">
+                                </div>
+                                <input type="text" value="${escapeAttr(item.word)}" onchange="extractedCandidates[${index}].word = this.value" class="w-full font-bold text-sm text-slate-900 bg-slate-50 px-2 py-1 rounded border border-slate-200 focus:border-indigo-500 outline-none">
+                            </div>
+                            <div class="space-y-1">
+                                <input type="text" value="${escapeAttr(item.meaning)}" onchange="extractedCandidates[${index}].meaning = this.value" class="w-full text-xs sm:text-sm font-medium text-slate-800 bg-slate-50 px-2 py-1 rounded border border-slate-200 focus:border-indigo-500 outline-none" placeholder="日本語の意味">
+                                <input type="text" value="${escapeAttr(item.note)}" onchange="extractedCandidates[${index}].note = this.value" class="w-full text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200/70 focus:border-indigo-500 outline-none" placeholder="補足・用例メモ">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        function toggleAllExtracted(state) {
+            extractedCandidates.forEach(item => item.selected = state);
+            renderExtractedCandidates();
+        }
+
+        function saveExtractedWords() {
+            const targetDeckId = document.getElementById('modal-target-deck').value;
+            const toAdd = extractedCandidates.filter(item => item.selected && item.word.trim() && item.meaning.trim());
+
+            if (toAdd.length === 0) {
+                showToast('追加する単語にチェックを入れてください', 'error');
+                return;
+            }
+
+            toAdd.forEach((item, idx) => {
+                allWords.unshift({
+                    id: 'w_' + Date.now() + '_' + idx + '_' + Math.floor(Math.random() * 1000),
+                    deckId: targetDeckId,
+                    type: item.type,
+                    word: item.word.trim(),
+                    phonetic: item.phonetic.trim(),
+                    pos: item.pos.trim() || (item.type === 'idiom' ? '熟' : '語'),
+                    meaning: item.meaning.trim(),
+                    note: item.note.trim()
+                });
+            });
+
+            selectedDeckId = targetDeckId;
+            saveState();
+            renderDeckSelectors();
+            refreshCurrentDeckView();
+            resetAiScanner();
+            closeAddModal();
+            showToast(`「${getDeckName(targetDeckId)}」に${toAdd.length}語を追加しました！`);
+        }
+
+        // ==========================================
+        // 9. ユーティリティ関数
+        // ==========================================
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+    </script>
+</body>
+</html>
